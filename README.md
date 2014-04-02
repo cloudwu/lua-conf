@@ -29,3 +29,5 @@ How to use
 ========
 
 See test.lua
+
+http://blog.codingnow.com/2014/04/lua-conf.html  (In Chinese)
