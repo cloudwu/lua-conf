@@ -229,7 +229,7 @@ fillcolliding(lua_State *L, struct context *ctx) {
 		uint32_t keyhash;
 		if (ishashkey(ctx, L, -2, &key, &keyhash, &keytype)) {
 			struct node * mainpos = &tbl->hash[keyhash % tbl->sizehash];
-			if (!(mainpos->nocolliding && mainpos->keytype == keytype && mainpos->key == key)) {
+			if (!(mainpos->keytype == keytype && mainpos->key == key)) {
 				// the key has not insert
 				struct node * n = NULL;
 				for (i=emptyslot;i<sizehash;i++) {
@@ -241,6 +241,7 @@ fillcolliding(lua_State *L, struct context *ctx) {
 				assert(n);
 				n->next = mainpos->next;
 				mainpos->next = n - tbl->hash;
+				mainpos->nocolliding = 0;
 				n->key = key;
 				n->keytype = keytype;
 				n->keyhash = keyhash;
@@ -476,7 +477,7 @@ pushvalue(lua_State *L, lua_State *sL, uint8_t vt, union value *v) {
 static struct node *
 lookup_key(struct table *tbl, uint32_t keyhash, int key, int keytype, const char *str, size_t sz) {
 	struct node *n = &tbl->hash[keyhash % tbl->sizehash];
-	if (keyhash != n->keyhash && n->nocolliding == 0)
+	if (keyhash != n->keyhash && n->nocolliding)
 		return NULL;
 	for (;;) {
 		if (keyhash == n->keyhash) {
