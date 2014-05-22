@@ -476,6 +476,8 @@ pushvalue(lua_State *L, lua_State *sL, uint8_t vt, union value *v) {
 
 static struct node *
 lookup_key(struct table *tbl, uint32_t keyhash, int key, int keytype, const char *str, size_t sz) {
+	if (tbl->sizehash == 0)
+		return NULL;
 	struct node *n = &tbl->hash[keyhash % tbl->sizehash];
 	if (keyhash != n->keyhash && n->nocolliding)
 		return NULL;
