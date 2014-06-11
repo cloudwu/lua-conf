@@ -23,6 +23,7 @@ Include the source luaconf.c in your project, or build it as a dynamic library.
 ```
 gcc -O2 -Wall --shared -o conf.so luaconf.c   #linux
 gcc -O2 -Wall --shared -o conf.dll luaconf.c -I/usr/local/include -L/usr/local/bin -llua52 # mingw
+gcc -O2 -o test -llua.5.2.3 test.c # mac with brew
 ```
 
 How to use
