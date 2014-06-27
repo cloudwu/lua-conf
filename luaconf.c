@@ -549,7 +549,7 @@ wrap_table(lua_State *L) {
 	if (lua_islightuserdata(L, -1)) {
 		lua_newtable(L);
 		lua_pushvalue(L, -2);
-		lua_rawseti(L, -2, 0);
+		lua_rawsetp(L, -2, NULL);
 		confmeta(L);
 		lua_setmetatable(L, -2);
 		lua_replace(L, -2);
@@ -559,7 +559,7 @@ wrap_table(lua_State *L) {
 static int
 cacheindex(lua_State *L) {
 	lua_pushcfunction(L, lindexconf);
-	lua_rawgeti(L, 1, 0);
+	lua_rawgetp(L, 1, NULL);
 	get_table(L,-1);	// check conf object
 	lua_pushvalue(L,2);
 	lua_call(L, 2, 1);
@@ -573,7 +573,7 @@ cacheindex(lua_State *L) {
 
 static int
 conflen(lua_State *L) {
-	lua_rawgeti(L, 1, 0);
+	lua_rawgetp(L, 1, NULL);
 	struct table * tbl = get_table(L,-1);
 	lua_pushinteger(L, tbl->sizearray);
 	return 1;
@@ -678,7 +678,7 @@ confpairs_wrap(lua_State *L) {
 static int
 confpairs(lua_State *L) {
 	lua_pushcfunction(L, confpairs_wrap);
-	lua_rawgeti(L, 1, 0);
+	lua_rawgetp(L, 1, NULL);
 	lua_pushnil(L);
 	return 3;
 }
@@ -706,7 +706,7 @@ confipairs_wrap(lua_State *L) {
 static int
 confipairs(lua_State *L) {
 	lua_pushcfunction(L, confipairs_wrap);
-	lua_rawgeti(L, 1, 0);
+	lua_rawgetp(L, 1, NULL);
 	lua_pushinteger(L, 0);
 	return 3;
 }
@@ -745,7 +745,7 @@ static int
 lboxconf(lua_State *L) {
 	lua_newtable(L);
 	lua_pushvalue(L,1);
-	lua_rawseti(L, -2, 0);
+	lua_rawsetp(L, -2, NULL);
 	confmeta(L);
 	lua_setmetatable(L, -2);
 
