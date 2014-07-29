@@ -35,6 +35,11 @@ struct node {
 	uint8_t nocolliding;	// 0 means colliding slot
 };
 
+struct state {
+	int dirty;
+	int ref;
+};
+
 struct table {
 	int sizearray;
 	int sizehash;
@@ -361,7 +366,9 @@ convert_stringmap(struct context *ctx) {
 	lua_State *L = ctx->L;
 	lua_settop(L, ctx->string_index + 1);
 	lua_pushvalue(L, 1);
-	lua_pushnil(L);
+	struct state * s = lua_newuserdata(L, sizeof(*s));
+	s->dirty = 0;
+	s->ref = 0;
 	lua_replace(L, 1);
 	lua_replace(L, -2);
 
@@ -375,8 +382,6 @@ convert_stringmap(struct context *ctx) {
 	}
 
 	lua_pop(L, 1);
-	lua_pushboolean(L, 1);	// dirty
-	lua_pushboolean(L, 0);	// clean
 
 	lua_gc(L, LUA_GCCOLLECT, 0);
 }
@@ -790,8 +795,8 @@ lboxconf(lua_State *L) {
 static int
 lmarkdirty(lua_State *L) {
 	struct table *tbl = get_table(L,1);
-	lua_copy(tbl->L, -2, -1);
-
+	struct state * s = lua_touserdata(tbl->L, 1);
+	s->dirty = 1;
 	return 0;
 }
 
@@ -800,7 +805,8 @@ lisdirty(lua_State *L) {
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_rawgetp(L, -1, NULL);
 	struct table *tbl = get_table(L,-1);
-	int d = lua_toboolean(tbl->L, -1);
+	struct state * s = lua_touserdata(tbl->L, 1);
+	int d = s->dirty;
 	lua_pushboolean(L, d);
 	
 	return 1;
