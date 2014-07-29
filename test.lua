@@ -14,7 +14,7 @@ local t = conf.new {
 	a=1,
 	b="hello",
 	c=true,
-	d = { 100,101,102,103},
+	d = { foo = {}, 100,101,102,103},
 	e = map,
 }
 
@@ -31,5 +31,14 @@ end
 print(box.a)
 print(box.b)
 print(box.c)
+print(box.d.foo.__key)
+
+for k,v in pairs(box.d.foo.__key) do
+	print(k,v)
+end
+
+print(conf.isdirty(box))
+conf.markdirty(t)
+print(conf.isdirty(box.d))
 
 conf.delete(t)

@@ -364,10 +364,9 @@ convert_stringmap(struct context *ctx) {
 	lua_pushnil(L);
 	lua_replace(L, 1);
 	lua_replace(L, -2);
+
 	lua_pushnil(L);
-
 	// ... stringmap nil
-
 	while (lua_next(L, -2) != 0) {
 		int idx = lua_tointeger(L, -1);
 		lua_pop(L, 1);
@@ -376,6 +375,8 @@ convert_stringmap(struct context *ctx) {
 	}
 
 	lua_pop(L, 1);
+	lua_pushboolean(L, 1);	// dirty
+	lua_pushboolean(L, 0);	// clean
 
 	lua_gc(L, LUA_GCCOLLECT, 0);
 }
@@ -388,7 +389,7 @@ lnewconf(lua_State *L) {
 	luaL_checktype(L,1,LUA_TTABLE);
 	ctx.L = luaL_newstate();
 	ctx.tbl = NULL;
-	ctx.string_index = 0;
+	ctx.string_index = 1;	// 1 reserved for dirty flag
 	if (ctx.L == NULL) {
 		lua_pushliteral(L, "memory error");
 		goto error;
@@ -550,9 +551,45 @@ wrap_table(lua_State *L) {
 		lua_newtable(L);
 		lua_pushvalue(L, -2);
 		lua_rawsetp(L, -2, NULL);
+
+		lua_pushliteral(L, "__key");
+		lua_pushvalue(L, -1);
+		lua_rawget(L, 1);	// get self.__key
+		if (lua_isnil(L, -1)) {
+			lua_pop(L,1);
+			// stack :  "__key" obj ... (2:key 1:self)
+			lua_createtable(L, 1, 0);	
+			lua_pushvalue(L, 2);
+			lua_rawseti(L, -2, 1);	
+			//stack: { key } "__key" obj ...
+		} else {
+			if (!lua_istable(L, -1)) {
+				luaL_error(L, "invalid __key");
+			}
+			// stack :  { parent_keys } "__key" obj ... (2:key 1:self)
+			size_t len = lua_rawlen(L, -1);
+			lua_createtable(L, len + 1, 0);
+			// copy key table
+			int i;
+			for (i=0;i<len;i++) {
+				lua_rawgeti(L, -2, i+1);
+				lua_rawseti(L, -2, i+1);
+			}
+			lua_pushvalue(L, 2);
+			lua_rawseti(L, -2, len+1);
+			// stack: { keys } {parent_keys} "__key" obj ...
+			lua_replace(L, -2);
+		}
+		lua_rawset(L, -3);
+
 		confmeta(L);
 		lua_setmetatable(L, -2);
 		lua_replace(L, -2);
+
+		// cache table in parent (don't cache value)
+		lua_pushvalue(L, 2);
+		lua_pushvalue(L, -2);
+		lua_rawset(L, 1);
 	}
 }
 
@@ -564,9 +601,6 @@ cacheindex(lua_State *L) {
 	lua_pushvalue(L,2);
 	lua_call(L, 2, 1);
 	wrap_table(L);
-	lua_pushvalue(L, 2);
-	lua_pushvalue(L, -2);
-	lua_rawset(L, 1);
 
 	return 1;
 }
@@ -743,12 +777,32 @@ lboxhashlen(lua_State *L) {
 
 static int
 lboxconf(lua_State *L) {
+	get_table(L,1);	// check argument
 	lua_newtable(L);
 	lua_pushvalue(L,1);
 	lua_rawsetp(L, -2, NULL);
 	confmeta(L);
 	lua_setmetatable(L, -2);
 
+	return 1;
+}
+
+static int
+lmarkdirty(lua_State *L) {
+	struct table *tbl = get_table(L,1);
+	lua_copy(tbl->L, -2, -1);
+
+	return 0;
+}
+
+static int
+lisdirty(lua_State *L) {
+	luaL_checktype(L, 1, LUA_TTABLE);
+	lua_rawgetp(L, -1, NULL);
+	struct table *tbl = get_table(L,-1);
+	int d = lua_toboolean(tbl->L, -1);
+	lua_pushboolean(L, d);
+	
 	return 1;
 }
 
@@ -762,6 +816,8 @@ luaopen_conf(lua_State *L) {
 		{ "next", lboxnext },
 		{ "len", lboxlen },
 		{ "hashlen", lboxhashlen },
+		{ "markdirty", lmarkdirty },
+		{ "isdirty", lisdirty },
 		{ NULL, NULL },
 	};
 	luaL_checkversion(L);
