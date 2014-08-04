@@ -10,7 +10,7 @@ for i = 1, 26 do
 end
 
 
-local t = conf.new {
+local t = conf.host.new {
 	a=1,
 	b="hello",
 	c=true,
@@ -31,14 +31,8 @@ end
 print(box.a)
 print(box.b)
 print(box.c)
-print(box.d.foo.__key)
 
-for k,v in pairs(box.d.foo.__key) do
-	print(k,v)
-end
+box=nil
+collectgarbage "collect"
 
-print(conf.isdirty(box))
-conf.markdirty(t)
-print(conf.isdirty(box.d))
-
-conf.delete(t)
+conf.host.delete(t)
