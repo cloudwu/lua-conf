@@ -372,6 +372,7 @@ pconv(lua_State *L) {
 static void
 convert_stringmap(struct context *ctx, struct table *tbl) {
 	lua_State *L = ctx->L;
+	luaL_checkstack(L, ctx->string_index + 1, NULL);
 	lua_settop(L, ctx->string_index + 1);
 	lua_pushvalue(L, 1);
 	struct state * s = lua_newuserdata(L, sizeof(*s));
